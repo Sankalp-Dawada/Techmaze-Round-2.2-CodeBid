@@ -2,27 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Timer } from './components/Timer';
 import { ProgressBar } from './components/ProgressBar';
 import { ChallengeEditor } from './components/ChallengeEditor';
-import { LanguageSelector } from './components/LanguageSelector';
 import { challenges } from './data/challenges';
-import { ChallengeState, Language } from './types';
+import { ChallengeState } from './types';
 import { Trophy, AlertCircle } from 'lucide-react';
 
-const TOTAL_TIME = 30 * 60; // 30 minutes
-const LANGUAGES: Language[] = ['Java', 'C++', 'C', 'Python'];
+const TOTAL_TIME = 20 * 15; // 30 minutes
 
 function App() {
-  const [selectedLanguage, setSelectedLanguage] = useState<Language>('Java');
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
   const [challengeStates, setChallengeStates] = useState<ChallengeState[]>([]);
   const [gameOver, setGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const [teamName, setTeamName] = useState("");
+  const [completionTime, setCompletionTime] = useState<number | null>(null);
 
-  // Reset challenges when language changes
   useEffect(() => {
-    const languageChallenges = challenges[selectedLanguage];
     setChallengeStates(
-      languageChallenges.map(challenge => ({
+      challenges.map(challenge => ({
         completed: false,
         userCode: challenge.buggyCode
       }))
@@ -31,7 +28,7 @@ function App() {
     setGameStarted(false);
     setGameOver(false);
     setTimeLeft(TOTAL_TIME);
-  }, [selectedLanguage]);
+  }, []);
 
   useEffect(() => {
     if (timeLeft > 0 && !gameOver && gameStarted) {
@@ -39,8 +36,9 @@ function App() {
         setTimeLeft(time => time - 1);
       }, 1000);
       return () => clearInterval(timer);
-    } else if (timeLeft === 0) {
+    } else if (timeLeft === 0 || completedChallenges === totalChallenges) {
       setGameOver(true);
+      setCompletionTime(TOTAL_TIME - timeLeft);
     }
   }, [timeLeft, gameOver, gameStarted]);
 
@@ -58,7 +56,7 @@ function App() {
       return;
     }
 
-    const currentChallenge = challenges[selectedLanguage][currentChallengeIndex];
+    const currentChallenge = challenges[currentChallengeIndex];
     const userCode = challengeStates[currentChallengeIndex].userCode;
     
     if (userCode.replace(/\s/g, '') === currentChallenge.correctCode.replace(/\s/g, '')) {
@@ -67,48 +65,29 @@ function App() {
           i === currentChallengeIndex ? { ...state, completed: true } : state
         )
       );
-
-      if (currentChallengeIndex < challenges[selectedLanguage].length - 1) {
-        setCurrentChallengeIndex(i => i + 1);
-      } else {
-        setGameOver(true);
-      }
     }
   };
 
-  const completedChallenges = challengeStates.filter(state => state.completed).length;
-  const currentChallenge = challenges[selectedLanguage][currentChallengeIndex];
-  const totalChallenges = challenges[selectedLanguage].length;
+  const handleNext = () => {
+    if (currentChallengeIndex < challenges.length - 1) {
+      setCurrentChallengeIndex(currentChallengeIndex + 1);
+    }
+  };
 
-  if (!gameStarted) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <h1 className="text-3xl font-bold text-center mb-8">Debug Challenge</h1>
-          <LanguageSelector
-            selectedLanguage={selectedLanguage}
-            onLanguageChange={setSelectedLanguage}
-            languages={LANGUAGES}
-          />
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">How to Play</h2>
-            <ul className="list-disc pl-6 space-y-2 text-gray-700">
-              <li>Select your preferred programming language</li>
-              <li>Fix the bugs in the provided code snippets</li>
-              <li>Complete as many challenges as you can within 30 minutes</li>
-              <li>Submit your solution to check if it's correct</li>
-            </ul>
-            <button
-              onClick={handleSubmit}
-              className="mt-6 bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 transition-colors w-full"
-            >
-              Start Challenge
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handlePrev = () => {
+    if (currentChallengeIndex > 0) {
+      setCurrentChallengeIndex(currentChallengeIndex - 1);
+    }
+  };
+
+  const handleExit = () => {
+    setGameOver(true);
+    setCompletionTime(TOTAL_TIME - timeLeft);
+  };
+
+  const completedChallenges = challengeStates.filter(state => state.completed).length;
+  const currentChallenge = challenges[currentChallengeIndex];
+  const totalChallenges = challenges.length;
 
   if (gameOver) {
     return (
@@ -117,20 +96,45 @@ function App() {
           <div className="text-center">
             <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
             <h1 className="text-3xl font-bold mb-4">Game Over!</h1>
+            <p className="text-xl mb-4">Team: {teamName}</p>
             <p className="text-xl mb-6">
               You completed {completedChallenges} out of {totalChallenges} challenges
-              {timeLeft === 0 ? " (Time's up!)" : ""}
             </p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => {
-                  setSelectedLanguage(selectedLanguage);  // This will trigger the reset effect
-                }}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
+            {completionTime !== null && (
+              <p className="text-xl mb-6">Completion Time: {Math.floor(completionTime / 60)}m {completionTime % 60}s</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!gameStarted) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <h1 className="text-3xl font-bold text-center mb-8">Debug Challenge</h1>
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4">How to Play</h2>
+            <ul className="list-disc pl-6 space-y-2 text-gray-700">
+              <li>Fix the bugs in the provided code snippets</li>
+              <li>Complete as many challenges as you can within 30 minutes</li>
+              <li>Submit your solution to check if it's correct</li>
+            </ul>
+            <input 
+              type="text" 
+              placeholder="Enter Team Name" 
+              value={teamName} 
+              onChange={(e) => setTeamName(e.target.value)} 
+              className="mt-4 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={!teamName.trim()}
+              className="mt-6 bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Start Challenge
+            </button>
           </div>
         </div>
       </div>
@@ -145,12 +149,6 @@ function App() {
           <ProgressBar completed={completedChallenges} total={totalChallenges} />
         </div>
         
-        <LanguageSelector
-          selectedLanguage={selectedLanguage}
-          onLanguageChange={setSelectedLanguage}
-          languages={LANGUAGES}
-        />
-        
         <ChallengeEditor
           challenge={currentChallenge}
           userCode={challengeStates[currentChallengeIndex].userCode}
@@ -158,15 +156,11 @@ function App() {
           onSubmit={handleSubmit}
         />
 
-        {currentChallenge.hint && (
-          <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-blue-900">Hint</h4>
-              <p className="text-blue-800">{currentChallenge.hint}</p>
-            </div>
-          </div>
-        )}
+        <div className="flex justify-between mt-4">
+          <button onClick={handlePrev} disabled={currentChallengeIndex === 0} className="bg-gray-500 text-white px-4 py-2 rounded-md disabled:opacity-50">Previous</button>
+          <button onClick={handleExit} className="bg-red-600 text-white px-4 py-2 rounded-md">Exit</button>
+          <button onClick={handleNext} disabled={currentChallengeIndex === challenges.length - 1} className="bg-blue-600 text-white px-4 py-2 rounded-md disabled:opacity-50">Next</button>
+        </div>
       </div>
     </div>
   );
