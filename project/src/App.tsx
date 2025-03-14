@@ -5,6 +5,7 @@ import { ChallengeEditor } from './components/ChallengeEditor';
 import { challenges } from './data/challenges'; // Import the challenges array
 import { ChallengeState } from './types';
 import { Trophy, AlertCircle } from 'lucide-react';
+import {Stack} from './components/Stack';
 
 const TOTAL_TIME = 30 * 60; // 30 minutes in seconds
 
@@ -250,6 +251,7 @@ function App() {
           <button onClick={handleNext} disabled={currentChallengeIndex === challenges.length - 1} className="bg-blue-600 text-white px-4 py-2 rounded-md disabled:opacity-50">Next</button>
         </div>
       </div>
+      <Stack completed={completedChallenges} total={challenges.length} />
     </div>
   );
 }
