@@ -18,7 +18,7 @@ export function Stack({ completed, total }: StackProps) {
           <span>{completed}/{total} Completed</span>
         </div>
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col-reverse gap-1">
         {blocks.map((isCompleted, index) => (
           <div
             key={index}
