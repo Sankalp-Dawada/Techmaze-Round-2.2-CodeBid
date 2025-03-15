@@ -5,13 +5,13 @@ import { ChallengeEditor } from './components/ChallengeEditor';
 import { challenges } from './data/challenges'; // Import the challenges array
 import { ChallengeState } from './types';
 import { Trophy, AlertCircle } from 'lucide-react';
-import {Stack} from './components/Stack';
+import { Stack } from './components/Stack';
 
-const TOTAL_TIME = 30 * 60; // 30 minutes in seconds
+const TOTAL_TIME = 20 * 60 ; // 30 minutes in seconds
 
 // Define your start and end dates here (example)
-const GAME_START_DATE = new Date('2025-03-14T12:54:00'); // Game start date and time
-const GAME_END_DATE = new Date('2025-03-26T12:55:00'); // Game end date and time
+const GAME_START_DATE = new Date('2025-03-14T22:00:00'); // Game start date and time
+const GAME_END_DATE = new Date('2025-03-26T22:00:00'); // Game end date and time
 
 function App() {
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
@@ -19,10 +19,10 @@ function App() {
   const [challengeStates, setChallengeStates] = useState<ChallengeState[]>([]);
   const [gameOver, setGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
-  const [teamName, setTeamName] = useState("");
+  const [teamName, setTeamName] = useState('');
   const [completionTime, setCompletionTime] = useState<number | null>(null);
   const [gameAvailable, setGameAvailable] = useState<boolean>(false);
-  const [timeUntilGameStarts, setTimeUntilGameStarts] = useState<string>("");
+  const [timeUntilGameStarts, setTimeUntilGameStarts] = useState<string>('');
 
   // Check if the game is available based on the start and end dates
   useEffect(() => {
@@ -34,7 +34,7 @@ function App() {
     }
   }, []);
 
-  // Update remaining time until game starts
+  // Update remaining time until the game starts
   useEffect(() => {
     if (!gameAvailable) {
       const interval = setInterval(() => {
@@ -148,6 +148,44 @@ function App() {
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
+  // Disable right-click functionality and text selection globally
+  useEffect(() => {
+    const handleContextMenu = (e) => {
+      e.preventDefault(); // Disable right-click
+    };
+
+    const preventSelect = (e) => {
+      e.preventDefault(); // Disable text selection
+    };
+
+    // Attach events to disable right-click and text selection
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('selectstart', preventSelect);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('selectstart', preventSelect);
+    };
+  }, []);
+
+  // Prevent page refresh during the game
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (gameStarted && !gameOver) {
+        const message = "Are you sure you want to leave? Your progress will be lost!";
+        e.returnValue = message; // Standard for most browsers
+        return message; // For some browsers like older Firefox
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [gameStarted, gameOver]);
+
   // Game Over screen
   if (gameOver) {
     return (
@@ -175,14 +213,11 @@ function App() {
       <div className="min-h-screen bg-gray-100 p-8">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8">
           <div className="text-center">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold mb-4">Game Unavailable</h1>
-            <p className="text-xl mb-4">
-              The game is not available at this time. Please check back between the game start and end times.
-            </p>
+            <h1 className="text-5xl font-bold mb-4">TechTetris</h1>
+            <h1 className="text-2xl font-light mb-4">Round 2-2</h1>
+            <h1 className="text-2xl font-bold mb-4">Starting Soon !</h1>
             <p className="text-xl mb-4">
               The game starts at: {GAME_START_DATE.toLocaleString()} <br />
-              The game ends at: {GAME_END_DATE.toLocaleString()}
             </p>
             <p className="text-xl mt-6">Time remaining until the game starts: {timeUntilGameStarts}</p>
           </div>
@@ -227,8 +262,8 @@ function App() {
 
   // During the game
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-100 p-8 flex">
+      <div className="max-w-4xl w-3/4 space-y-6">
         <div className="grid grid-cols-2 gap-6">
           <Timer timeLeft={timeLeft} totalTime={TOTAL_TIME} />
           <ProgressBar completed={completedChallenges} total={challenges.length} />
@@ -251,7 +286,9 @@ function App() {
           <button onClick={handleNext} disabled={currentChallengeIndex === challenges.length - 1} className="bg-blue-600 text-white px-4 py-2 rounded-md disabled:opacity-50">Next</button>
         </div>
       </div>
-      <Stack completed={completedChallenges} total={challenges.length} />
+      <div className="w-1/4 flex justify-end">
+        <Stack completed={completedChallenges} total={challenges.length} />
+      </div>
     </div>
   );
 }
