@@ -6,6 +6,8 @@ import { challenges } from './data/challenges'; // Import the challenges array
 import { ChallengeState } from './types';
 import { Trophy, AlertCircle } from 'lucide-react';
 import { Stack } from './components/Stack';
+import axios from 'axios';
+
 
 const TOTAL_TIME = 20 * 60 ; // 30 minutes in seconds
 
@@ -94,26 +96,68 @@ function App() {
   };
 
   // Handle submit
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!gameStarted) {
       setGameStarted(true);
       return;
     }
-
+  
     const currentChallenge = challenges[currentChallengeIndex];
+    const buggyCode = challenges[currentChallengeIndex].buggyCode;
     const userCode = challengeStates[currentChallengeIndex].userCode;
+  
+    // Use fetch to validate code via ChatGPT API
+    const prompt = `
+    The buggy code is:
+    ${buggyCode}
+    Please check the following code and return only "correct" or "incorrect." 
+    Do not consider any possible changes if the code is giving the expected output
+      ${userCode}
+    `;
 
-    // Compare code
-    if (userCode.replace(/\s/g, '') === currentChallenge.correctCode.replace(/\s/g, '')) {
-      setChallengeStates((states) =>
-        states.map((state, i) =>
-          i === currentChallengeIndex ? { ...state, completed: true } : state
-        )
+    try {
+      const response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-4o-mini', // or 'gpt-3.5-turbo' based on your access
+          messages: [
+            {
+              role: 'user',
+              content: prompt, // The prompt should be sent as a user message
+            },
+          ],
+          temperature: 0.7,
+          top_p: 1,
+          frequency_penalty: 0,
+          presence_penalty: 0,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer YOUR_API_KEY`,
+          }
+        }
       );
-    } else {
-      alert("Wrong answer! Try again.");
+    
+      const data = response.data;
+      const answer = data.choices[0].message.content.trim().toLowerCase();
+    
+      // Compare the response from ChatGPT with the expected outcome
+      if (answer === 'correct') {
+        setChallengeStates((states) =>
+          states.map((state, i) =>
+            i === currentChallengeIndex ? { ...state, completed: true } : state
+          )
+        );
+      } else {
+        alert('Wrong answer! Try again. ');
+      }
+    } catch (error) {
+      console.error('Error validating code:', error);
+      alert(error || 'An error occurred');
     }
   };
+  
 
   // Handle next challenge
   const handleNext = () => {
