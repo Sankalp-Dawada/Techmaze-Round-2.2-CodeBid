@@ -95,27 +95,69 @@ function App() {
     );
   };
 
-  // Handle submit
   const handleSubmit = async () => {
+    let apiKey;
+  
     if (!gameStarted) {
+      const generateRandomString = (length: number): string => {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        let randomString = '';
+        
+        for (let i = 0; i < length; i++) {
+          const randomIndex = Math.floor(Math.random() * characters.length);
+          randomString += characters[randomIndex];
+        }
+      
+        return randomString;
+      };
+      
+      // Example usage
+      const serviceAccName = generateRandomString(10); // Generates a random string of length 10
+  
+      // Define the URL, data, and headers
+      const url = 'https://api.openai.com/v1/organization/projects/proj_jucvMCQ3zwNpP20IDcG0Vrp3/service_accounts';
+      const data = {
+        name: serviceAccName,
+      };
+      const headers = {
+        'Authorization': `Bearer YOUR_OPENAI_ADMIN_KEY`, // Replace with actual API key if needed
+        'Content-Type': 'application/json',
+      };
+  
+      // Make the POST request using axios
+      try {
+        //alert('damned');
+        const response = await axios.post(url, data, { headers });
+  
+        apiKey = response.data.api_key.value;  // Assign apiKey from the response
+        //alert(apiKey);
+        localStorage.setItem('apiKey',apiKey);
+      } catch (error) {
+        alert(error);
+        return; // If the first API call fails, prevent proceeding further
+      }
+  
       setGameStarted(true);
       return;
     }
   
+    // Once apiKey is assigned, proceed with the second POST request
     const currentChallenge = challenges[currentChallengeIndex];
-    const buggyCode = challenges[currentChallengeIndex].buggyCode;
+    const buggyCode = currentChallenge.buggyCode;
     const userCode = challengeStates[currentChallengeIndex].userCode;
   
     // Use fetch to validate code via ChatGPT API
     const prompt = `
-    The buggy code is:
-    ${buggyCode}
-    Please check the following code and return only "correct" or "incorrect." 
-    Do not consider any possible changes if the code is giving the expected output
-      ${userCode}
+      The buggy code is:
+      ${buggyCode}
+      Please check the following code and return only "correct" or "incorrect." 
+      Do not consider any possible changes if the code is giving the expected output
+        ${userCode}
     `;
-
+  
     try {
+      apiKey = localStorage.getItem('apiKey');
+      //alert(apiKey); // Ensure apiKey is available here
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
@@ -134,14 +176,14 @@ function App() {
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer YOUR_API_KEY`,
+            'Authorization': `Bearer ${apiKey}`,
           }
         }
       );
-    
+  
       const data = response.data;
       const answer = data.choices[0].message.content.trim().toLowerCase();
-    
+  
       // Compare the response from ChatGPT with the expected outcome
       if (answer === 'correct') {
         setChallengeStates((states) =>
@@ -149,8 +191,9 @@ function App() {
             i === currentChallengeIndex ? { ...state, completed: true } : state
           )
         );
-      } else {
-        alert('Wrong answer! Try again. ');
+      } 
+      else {
+        alert('Wrong Answer. Try Again!');
       }
     } catch (error) {
       console.error('Error validating code:', error);
