@@ -4,9 +4,11 @@ import { ProgressBar } from './components/ProgressBar';
 import { ChallengeEditor } from './components/ChallengeEditor';
 import { challenges } from './data/challenges'; // Import the challenges array
 import { ChallengeState } from './types';
-import { Trophy, AlertCircle } from 'lucide-react';
+import { Trophy, AlertCircle, Type } from 'lucide-react';
 import { Stack } from './components/Stack';
 import axios from 'axios';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from './firebaseconfig';
 
 
 const TOTAL_TIME = 20 * 60 ; // 30 minutes in seconds
@@ -25,6 +27,22 @@ function App() {
   const [completionTime, setCompletionTime] = useState<number | null>(null);
   const [gameAvailable, setGameAvailable] = useState<boolean>(false);
   const [timeUntilGameStarts, setTimeUntilGameStarts] = useState<string>('');
+
+  const finishAttempt = async () => {
+    // alert(completionTime);
+    // alert(typeof completionTime);
+    const DocRef = doc(db, "UserLogin", teamName);
+    const data = {
+      time_taken : completionTime,
+      score : completedChallenges,
+    };
+    try {
+      await setDoc(DocRef, data);
+      console.log("Document successfully written!");
+    } catch (error) {
+      alert(error);
+    }
+  }
 
   // Check if the game is available based on the start and end dates
   useEffect(() => {
@@ -83,6 +101,7 @@ function App() {
     } else if (timeLeft === 0 || completedChallenges === challenges.length) {
       setGameOver(true);
       setCompletionTime(TOTAL_TIME - timeLeft);
+      finishAttempt();
     }
   }, [timeLeft, gameOver, gameStarted]);
 
@@ -120,7 +139,7 @@ function App() {
         name: serviceAccName,
       };
       const headers = {
-        'Authorization': `Bearer YOUR_OPENAI_ADMIN_KEY`, // Replace with actual API key if needed
+        'Authorization': `Bearer APIADMIN_KEY`, // Replace with actual API key if needed
         'Content-Type': 'application/json',
       };
   
@@ -220,6 +239,7 @@ function App() {
   const handleExit = () => {
     setGameOver(true);
     setCompletionTime(TOTAL_TIME - timeLeft);
+    finishAttempt();
   };
 
   // Get the number of completed challenges
