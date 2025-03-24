@@ -24,16 +24,18 @@ function App() {
   const [gameOver, setGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [teamName, setTeamName] = useState('');
-  const [completionTime, setCompletionTime] = useState<number | null>(null);
+  const [completionTime, setCompletionTime] = useState<number>(0);
   const [gameAvailable, setGameAvailable] = useState<boolean>(false);
   const [timeUntilGameStarts, setTimeUntilGameStarts] = useState<string>('');
 
   const finishAttempt = async () => {
-    // alert(completionTime);
-    // alert(typeof completionTime);
+     let time = TOTAL_TIME - timeLeft;
+     //alert(time);
+     //alert(typeof time);
     const DocRef = doc(db, "UserLogin", teamName);
     const data = {
-      time_taken : completionTime,
+      team_name : teamName,
+      time_taken : time,
       score : completedChallenges,
     };
     try {
@@ -126,7 +128,6 @@ function App() {
           const randomIndex = Math.floor(Math.random() * characters.length);
           randomString += characters[randomIndex];
         }
-      
         return randomString;
       };
       
@@ -398,6 +399,5 @@ function App() {
       </div>
     </div>
   );
-}
-
+   }
 export default App;

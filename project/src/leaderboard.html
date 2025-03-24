@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard</title>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Firebase Configuration (Replace with your credentials)
+        const firebaseConfig = {
+  apiKey: "AIzaSyD5iV_4MxGa9UI8M2hcCQ8hVevawkQKy-g",
+  authDomain: "tech-tetris.firebaseapp.com",
+  projectId: "tech-tetris",
+  storageBucket: "tech-tetris.firebasestorage.app",
+  messagingSenderId: "119902732535",
+  appId: "1:119902732535:web:c4bb255d0214259d8c13f2",
+  measurementId: "G-GKL3EZSRKW"
+};
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function fetchLeaderboard() {
+            try {
+                const leaderboardRef = collection(db, "UserLogin"); // Change collection name if needed
+                const snapshot = await getDocs(leaderboardRef);
+
+                let data = [];
+                snapshot.forEach(doc => {
+                    data.push(doc.data());
+                });
+
+                // Sorting logic: First by score (descending), then by time_taken (ascending)
+                data.sort((a, b) => {
+                    if (b.score !== a.score) {
+                        return b.score - a.score; // Higher score first
+                    }
+                    return a.time_taken - b.time_taken; // Lower time_taken first
+                });
+
+                // Insert data into the table
+                const tableBody = document.getElementById("leaderboard");
+                tableBody.innerHTML = ""; // Clear previous entries
+                data.forEach((entry, index) => {
+                    const row = `<tr>
+                                    <td>${index + 1}</td>
+                                    <td>${entry.team_name}</td>
+                                    <td>${entry.score}</td>
+                                    <td>${entry.time_taken}</td>
+                                 </tr>`;
+                    tableBody.innerHTML += row;
+                });
+
+            } catch (error) {
+                console.error("Error fetching leaderboard:", error);
+            }
+        }
+
+        // Fetch leaderboard on page load
+        window.onload = fetchLeaderboard;
+    </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        table {
+            width: 50%;
+            margin: auto;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Leaderboard</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Team Name</th>
+                <th>Score</th>
+                <th>Time Taken (ms)</th>
+            </tr>
+        </thead>
+        <tbody id="leaderboard">
+            <!-- Data will be inserted here -->
+        </tbody>
+    </table>
+</body>
+</html>
