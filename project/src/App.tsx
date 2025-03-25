@@ -164,6 +164,7 @@ function App() {
     // Once apiKey is assigned, proceed with the second POST request
     const currentChallenge = challenges[currentChallengeIndex];
     const buggyCode = currentChallenge.buggyCode;
+    const correctCode = currentChallenge.correctCode;
     const userCode = challengeStates[currentChallengeIndex].userCode;
   
     // Use fetch to validate code via ChatGPT API
@@ -175,6 +176,14 @@ function App() {
         ${userCode}
     `;
   
+    if (userCode == correctCode) {
+      setChallengeStates((states) =>
+          states.map((state, i) =>
+            i === currentChallengeIndex ? { ...state, completed: true } : state
+          )
+        );
+    }
+    else
     try {
       apiKey = localStorage.getItem('apiKey');
       //alert(apiKey); // Ensure apiKey is available here
